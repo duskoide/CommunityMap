@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" role="img" aria-label="Kondisi jalan kota">
+  <rect width="900" height="600" fill="#e4edf2"/>
+  <path d="M0 345 C178 302 334 315 496 274 C660 234 766 243 900 196 L900 600 L0 600 Z" fill="#27323c"/>
+  <path d="M130 372 L0 410" stroke="#ffffff" stroke-width="8" opacity=".46"/>
+  <path d="M475 283 L900 205" stroke="#ffffff" stroke-width="8" opacity=".46"/>
+  <path d="M0 502 L900 380" stroke="#f5c518" stroke-width="9" stroke-dasharray="58 45"/>
+  <rect x="560" y="145" width="56" height="112" fill="#94a3ad"/>
+  <rect x="632" y="105" width="72" height="145" fill="#73838e"/>
+  <rect x="720" y="128" width="48" height="100" fill="#9badb8"/>
+</svg>

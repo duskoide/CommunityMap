@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" role="img" aria-label="Lampu jalan mati">
+  <rect width="900" height="600" fill="#071826"/>
+  <path d="M0 415 C200 360 400 350 900 280 L900 600 L0 600 Z" fill="#1c2630"/>
+  <path d="M180 80 V430" stroke="#667383" stroke-width="16" stroke-linecap="round"/>
+  <path d="M180 100 C300 95 330 140 362 192" fill="none" stroke="#667383" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="372" cy="205" r="34" fill="#1f2d38" stroke="#667383" stroke-width="8"/>
+  <circle cx="372" cy="205" r="18" fill="#2c3944"/>
+  <path d="M515 130 V395" stroke="#95a2ad" stroke-width="12" stroke-linecap="round" opacity=".45"/>
+  <path d="M515 148 C600 148 628 180 650 220" fill="none" stroke="#95a2ad" stroke-width="10" stroke-linecap="round" opacity=".45"/>
+  <circle cx="655" cy="228" r="24" fill="#f5c518" opacity=".35"/>
+  <path d="M0 510 L900 386" stroke="#f5c518" stroke-width="8" stroke-dasharray="46 36" opacity=".62"/>
+</svg>

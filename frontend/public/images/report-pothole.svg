@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" role="img" aria-label="Jalan berlubang">
+  <defs>
+    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+      <stop stop-color="#dbe7ee"/>
+      <stop offset="1" stop-color="#f7f9fb"/>
+    </linearGradient>
+    <linearGradient id="road" x1="0" x2="0" y1="0" y2="1">
+      <stop stop-color="#636b73"/>
+      <stop offset="1" stop-color="#1c2630"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="600" fill="url(#sky)"/>
+  <path d="M0 350 C190 300 320 320 475 280 C640 240 760 260 900 205 L900 600 L0 600 Z" fill="url(#road)"/>
+  <path d="M445 332 C520 300 620 302 695 338 C640 390 510 405 430 374 C392 358 400 342 445 332Z" fill="#0b1117"/>
+  <path d="M472 340 C530 318 604 322 654 344 C610 364 515 378 465 359 C444 351 449 346 472 340Z" fill="#202a33"/>
+  <path d="M0 410 L270 360" stroke="#f5c518" stroke-width="10" stroke-dasharray="56 42" opacity=".85"/>
+  <path d="M585 250 L900 175" stroke="#ffffff" stroke-width="8" opacity=".42"/>
+  <circle cx="520" cy="353" r="12" fill="#44515c"/>
+  <circle cx="592" cy="344" r="8" fill="#44515c"/>
+</svg>

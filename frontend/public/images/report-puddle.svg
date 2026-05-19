@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" role="img" aria-label="Genangan air di jalan">
+  <rect width="900" height="600" fill="#cbd8e2"/>
+  <path d="M0 285 C180 250 315 272 455 242 C620 207 748 222 900 172 L900 600 L0 600 Z" fill="#3e4953"/>
+  <ellipse cx="505" cy="410" rx="265" ry="70" fill="#2477d9" opacity=".62"/>
+  <ellipse cx="505" cy="402" rx="218" ry="46" fill="#8fd5ec" opacity=".7"/>
+  <path d="M285 402 C360 382 451 383 520 398" stroke="#f7f9fb" stroke-width="5" opacity=".55"/>
+  <path d="M0 360 L250 326" stroke="#ffffff" stroke-width="7" opacity=".5"/>
+  <path d="M650 245 L900 190" stroke="#ffffff" stroke-width="7" opacity=".42"/>
+  <circle cx="320" cy="150" r="4" fill="#2477d9" opacity=".35"/>
+  <circle cx="410" cy="120" r="4" fill="#2477d9" opacity=".35"/>
+  <circle cx="560" cy="135" r="4" fill="#2477d9" opacity=".35"/>
+</svg>
