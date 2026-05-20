@@ -9,22 +9,139 @@ import {
   MapPin,
   Plus,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { CategoryIcon } from "@/components/ui/category-icon";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { categories } from "@/data/mock-data";
+import { categories } from "@/data/report-metadata";
+import { createReport } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import type { ReportCategorySlug } from "@/types/community-map";
 
 const steps = ["Informasi", "Lokasi", "Tinjau & Kirim"];
+const categoryPreviewImages: Record<ReportCategorySlug, string> = {
+  pothole: "/images/report-pothole.svg",
+  streetlight: "/images/report-streetlight.svg",
+  puddle: "/images/report-puddle.svg",
+  flood: "/images/report-flood.svg",
+  other: "/images/report-road.svg",
+};
 
 export function ReportForm() {
   const [step, setStep] = useState(0);
   const [category, setCategory] = useState<ReportCategorySlug>("pothole");
-  const [submitted, setSubmitted] = useState(false);
+  const [title, setTitle] = useState("Lubang besar di tengah jalan");
+  const [description, setDescription] = useState(
+    "Lubang cukup besar dan dalam, terutama berbahaya saat malam hari. Mohon segera ditindaklanjuti. Terima kasih.",
+  );
+  const [address, setAddress] = useState("Jl. Ahmad Yani No. 45, Jakarta Pusat");
+  const [district, setDistrict] = useState("Jakarta Pusat");
+  const [latitude, setLatitude] = useState("-6.1817");
+  const [longitude, setLongitude] = useState("106.8663");
+  const [submittedId, setSubmittedId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedbackTone, setFeedbackTone] = useState<"error" | "success">("error");
+  const [pending, startTransition] = useTransition();
+  const [locating, setLocating] = useState(false);
 
-  if (submitted) {
+  async function resolveAddress(latitudeValue: string, longitudeValue: string) {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitudeValue}&lon=${longitudeValue}&zoom=18&addressdetails=1`,
+      {
+        headers: {
+          Accept: "application/json",
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error("Gagal menerjemahkan koordinat menjadi alamat.");
+    }
+
+    const payload = (await response.json()) as {
+      display_name?: string;
+      address?: {
+        road?: string;
+        suburb?: string;
+        city?: string;
+        county?: string;
+        town?: string;
+        village?: string;
+        state_district?: string;
+      };
+    };
+
+    const nextAddress =
+      payload.display_name ||
+      [payload.address?.road, payload.address?.suburb].filter(Boolean).join(", ");
+    const nextDistrict =
+      payload.address?.city ||
+      payload.address?.county ||
+      payload.address?.town ||
+      payload.address?.village ||
+      payload.address?.state_district;
+
+    if (nextAddress) {
+      setAddress(nextAddress);
+    }
+
+    if (nextDistrict) {
+      setDistrict(nextDistrict);
+    }
+  }
+
+  function useCurrentLocation() {
+    if (!navigator.geolocation) {
+      setFeedbackTone("error");
+      setFeedback("Browser ini tidak mendukung GPS lokasi.");
+      return;
+    }
+
+    setLocating(true);
+    setFeedback(null);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const nextLatitude = position.coords.latitude.toFixed(6);
+        const nextLongitude = position.coords.longitude.toFixed(6);
+
+        setLatitude(nextLatitude);
+        setLongitude(nextLongitude);
+        setAddress(`Koordinat GPS ${nextLatitude}, ${nextLongitude}`);
+        setDistrict("Lokasi GPS");
+
+        try {
+          await resolveAddress(nextLatitude, nextLongitude);
+          setFeedbackTone("success");
+          setFeedback("Lokasi berhasil diambil dari GPS dan alamat terisi otomatis.");
+        } catch {
+          setFeedbackTone("error");
+          setFeedback(
+            "Koordinat GPS berhasil diambil, tapi alamat lengkap belum ketemu. Kamu masih bisa edit manual.",
+          );
+        } finally {
+          setLocating(false);
+        }
+      },
+      (error) => {
+        const message =
+          error.code === error.PERMISSION_DENIED
+            ? "Izin lokasi ditolak. Aktifkan izin GPS di browser untuk mengisi otomatis."
+            : "Lokasi tidak bisa diambil sekarang. Coba lagi atau isi manual.";
+
+        setFeedback(message);
+        setFeedbackTone("error");
+        setLocating(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      },
+    );
+  }
+
+  if (submittedId) {
     return (
       <Card className="mx-auto max-w-2xl p-8 text-center">
         <span className="mx-auto flex size-16 items-center justify-center rounded-full bg-[rgb(59_167_101_/_12%)] text-[var(--green)]">
@@ -32,11 +149,16 @@ export function ReportForm() {
         </span>
         <h1 className="mt-5 text-3xl font-black">Laporan diterima</h1>
         <p className="mt-3 text-[var(--muted)]">
-          Data laporan disimpan sebagai simulasi frontend. Saat backend siap,
-          payload ini dapat langsung dikirim ke endpoint `POST /api/reports`.
+          Laporan baru sudah tersimpan di backend dengan ID <strong>{submittedId}</strong>.
         </p>
         <div className="mt-6 flex justify-center gap-3">
-          <Button onClick={() => setSubmitted(false)} variant="secondary">
+          <Button
+            onClick={() => {
+              setSubmittedId(null);
+              setFeedback(null);
+            }}
+            variant="secondary"
+          >
             Buat Laporan Lagi
           </Button>
           <Button onClick={() => window.location.assign("/history")}>
@@ -75,6 +197,19 @@ export function ReportForm() {
       </div>
 
       <div className="p-5 sm:p-8">
+        {feedback && (
+          <div
+            className={cn(
+              "mb-5 rounded-lg px-4 py-3 text-sm",
+              feedbackTone === "success"
+                ? "border border-[rgb(59_167_101_/_24%)] bg-[rgb(59_167_101_/_10%)] text-[var(--green)]"
+                : "border border-[rgb(239_59_45_/_24%)] bg-[rgb(239_59_45_/_8%)] text-[var(--danger)]",
+            )}
+          >
+            {feedback}
+          </div>
+        )}
+
         {step === 0 && (
           <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
             <section>
@@ -102,14 +237,18 @@ export function ReportForm() {
               </div>
               <div className="mt-8">
                 <h2 className="text-sm font-bold">Unggah Foto</h2>
+                <p className="mt-2 text-xs text-[var(--muted)]">
+                  Demo lokal saat ini memakai ilustrasi kategori sebagai placeholder
+                  foto, jadi alur pelaporan sudah bisa dites tanpa upload file.
+                </p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_96px_96px_96px]">
                   <div className="flex min-h-32 flex-col items-center justify-center rounded-lg border border-dashed border-[var(--border)] bg-[var(--surface-strong)] p-4 text-center">
                     <Camera className="size-6 text-[var(--muted)]" />
                     <p className="mt-2 text-xs font-semibold text-[var(--muted)]">
-                      Klik untuk unggah foto atau drag & drop
+                      Placeholder gambar akan dipilih dari kategori laporan
                     </p>
                     <p className="text-xs text-[var(--muted)]">
-                      PNG, JPG maks. 5MB
+                      Integrasi upload file bisa ditambah belakangan
                     </p>
                   </div>
                   {[1, 2].map((item) => (
@@ -132,14 +271,16 @@ export function ReportForm() {
                   Judul Singkat
                   <input
                     className="h-11 rounded-md border border-[var(--border)] px-3 text-sm outline-none focus:border-[var(--teal)]"
-                    defaultValue="Lubang besar di tengah jalan"
+                    value={title}
+                    onChange={(event) => setTitle(event.target.value)}
                   />
                 </label>
                 <label className="flex flex-col gap-2 text-sm font-semibold">
                   Deskripsi
                   <textarea
                     className="min-h-40 rounded-md border border-[var(--border)] px-3 py-3 text-sm outline-none focus:border-[var(--teal)]"
-                    defaultValue="Lubang cukup besar dan dalam, terutama berbahaya saat malam hari. Mohon segera ditindaklanjuti. Terima kasih."
+                    value={description}
+                    onChange={(event) => setDescription(event.target.value)}
                   />
                 </label>
               </div>
@@ -156,17 +297,48 @@ export function ReportForm() {
                 untuk menandai titik masalah secara manual.
               </p>
               <div className="mt-5 flex flex-col gap-3">
-                <Button className="justify-start">
+                <Button className="justify-start" onClick={useCurrentLocation} disabled={locating}>
                   <LocateFixed className="size-4" />
-                  Gunakan Lokasi Saat Ini
+                  {locating ? "Mengambil Lokasi..." : "Gunakan Lokasi Saat Ini"}
                 </Button>
+                <p className="text-xs text-[var(--muted)]">
+                  Saat diizinkan browser, tombol ini akan mengisi latitude,
+                  longitude, dan mencoba menebak alamat terdekat secara otomatis.
+                </p>
                 <label className="flex flex-col gap-2 text-sm font-semibold">
                   Alamat Perkiraan
                   <input
                     className="h-11 rounded-md border border-[var(--border)] px-3 text-sm outline-none focus:border-[var(--teal)]"
-                    defaultValue="Jl. Ahmad Yani No. 45, Jakarta Pusat"
+                    value={address}
+                    onChange={(event) => setAddress(event.target.value)}
                   />
                 </label>
+                <label className="flex flex-col gap-2 text-sm font-semibold">
+                  Wilayah / Kota
+                  <input
+                    className="h-11 rounded-md border border-[var(--border)] px-3 text-sm outline-none focus:border-[var(--teal)]"
+                    value={district}
+                    onChange={(event) => setDistrict(event.target.value)}
+                  />
+                </label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="flex flex-col gap-2 text-sm font-semibold">
+                    Latitude
+                    <input
+                      className="h-11 rounded-md border border-[var(--border)] px-3 text-sm outline-none focus:border-[var(--teal)]"
+                      value={latitude}
+                      onChange={(event) => setLatitude(event.target.value)}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-2 text-sm font-semibold">
+                    Longitude
+                    <input
+                      className="h-11 rounded-md border border-[var(--border)] px-3 text-sm outline-none focus:border-[var(--teal)]"
+                      value={longitude}
+                      onChange={(event) => setLongitude(event.target.value)}
+                    />
+                  </label>
+                </div>
               </div>
             </section>
             <div className="relative min-h-[360px] overflow-hidden rounded-lg border border-[var(--border)] bg-white">
@@ -185,15 +357,17 @@ export function ReportForm() {
           <div>
             <h1 className="text-2xl font-black">Tinjau & Kirim</h1>
             <div className="mt-5 grid gap-4 lg:grid-cols-3">
-              <ReviewItem label="Kategori" value="Jalan Berlubang" />
-              <ReviewItem label="Lokasi" value="Jl. Ahmad Yani No. 45" />
+              <ReviewItem
+                label="Kategori"
+                value={categories.find((item) => item.slug === category)?.name || "Lainnya"}
+              />
+              <ReviewItem label="Lokasi" value={address} />
               <ReviewItem label="Status Awal" value="Baru" />
             </div>
             <div className="mt-5 rounded-lg border border-[var(--border)] bg-[var(--surface-strong)] p-4">
-              <p className="text-sm font-bold">Lubang besar di tengah jalan</p>
+              <p className="text-sm font-bold">{title || "Judul laporan"}</p>
               <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                Lubang cukup besar dan dalam, terutama berbahaya saat malam hari.
-                Mohon segera ditindaklanjuti.
+                {description || "Deskripsi laporan akan muncul di sini."}
               </p>
             </div>
           </div>
@@ -210,11 +384,43 @@ export function ReportForm() {
           Batal
         </Button>
         <Button
-          onClick={() =>
-            step === 2 ? setSubmitted(true) : setStep((current) => current + 1)
-          }
+          disabled={pending}
+          onClick={() => {
+            if (step < 2) {
+              setStep((current) => current + 1);
+              return;
+            }
+
+            setFeedback(null);
+            setFeedbackTone("error");
+            startTransition(async () => {
+              try {
+                const created = await createReport({
+                  categorySlug: category,
+                  title,
+                  description,
+                  address,
+                  district,
+                  latitude: Number(latitude),
+                  longitude: Number(longitude),
+                  imageUrl: categoryPreviewImages[category],
+                  imageAlt: title,
+                  storageKey: `reports/local-preview/${category}.svg`,
+                });
+
+                setSubmittedId(created.id);
+              } catch (error) {
+                setFeedbackTone("error");
+                setFeedback(
+                  error instanceof Error
+                    ? error.message
+                    : "Gagal mengirim laporan.",
+                );
+              }
+            });
+          }}
         >
-          {step === 2 ? "Kirim Laporan" : "Selanjutnya"}
+          {step === 2 ? (pending ? "Mengirim..." : "Kirim Laporan") : "Selanjutnya"}
           <ArrowRight className="size-4" />
         </Button>
       </div>

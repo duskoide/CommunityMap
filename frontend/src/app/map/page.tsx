@@ -1,12 +1,15 @@
-import { SiteHeader } from "@/components/layout/site-header";
+import { AppHeader } from "@/components/layout/app-header";
 import { PublicMap } from "@/components/map/public-map";
+import { getReports } from "@/lib/api";
 
-export default function MapPage() {
+export default async function MapPage() {
+  const reports = await getReports();
+
   return (
     <>
-      <SiteHeader />
+      <AppHeader />
       <main className="bg-[var(--background)] p-3 sm:p-5">
-        <PublicMap />
+        <PublicMap initialReports={reports} />
       </main>
     </>
   );

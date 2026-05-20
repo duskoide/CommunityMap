@@ -3,18 +3,66 @@
 import { Menu, MapPin } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LogoutButton } from "@/components/auth/logout-button";
 import { ButtonLink } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import type { AppUser } from "@/types/community-map";
 
-const navItems = [
-  { href: "/map", label: "Peta" },
-  { href: "/report", label: "Lapor" },
-  { href: "/history", label: "Riwayat" },
-  { href: "/admin", label: "Dashboard" },
-];
+function getNavigation(currentUser: AppUser | null) {
+  if (!currentUser) {
+    return [{ href: "/map", label: "Peta" }];
+  }
 
-export function SiteHeader({ dark = false }: { dark?: boolean }) {
+  if (currentUser.role === "admin") {
+    return [
+      { href: "/map", label: "Peta" },
+      { href: "/admin", label: "Dashboard" },
+    ];
+  }
+
+  return [
+    { href: "/map", label: "Peta" },
+    { href: "/report", label: "Lapor" },
+    { href: "/history", label: "Riwayat" },
+  ];
+}
+
+function getPrimaryAction(currentUser: AppUser | null) {
+  if (!currentUser) {
+    return {
+      href: "/login",
+      label: "Masuk Dulu",
+    };
+  }
+
+  if (currentUser.role === "admin") {
+    return {
+      href: "/admin",
+      label: "Dashboard Petugas",
+    };
+  }
+
+  return {
+    href: "/report",
+    label: "Laporkan Jalan",
+  };
+}
+
+export function SiteHeader({
+  dark = false,
+  currentUser = null,
+}: {
+  dark?: boolean;
+  currentUser?: AppUser | null;
+}) {
   const pathname = usePathname();
+  const navItems = getNavigation(currentUser);
+  const primaryAction = getPrimaryAction(currentUser);
+  const roleLabel =
+    currentUser?.role === "admin" ? "Petugas" : currentUser ? "Warga" : "Tamu";
+  const statusLabel = currentUser
+    ? `Masuk sebagai ${roleLabel}`
+    : "Belum login";
 
   return (
     <header
@@ -53,8 +101,43 @@ export function SiteHeader({ dark = false }: { dark?: boolean }) {
           ))}
         </nav>
         <div className="flex items-center gap-2">
-          <ButtonLink href="/report" className="hidden sm:inline-flex">
-            Laporkan Jalan
+          <div className="hidden items-center gap-3 lg:flex">
+            <div className="text-right">
+              <p
+                className={cn(
+                  "text-xs font-bold uppercase tracking-[0.2em]",
+                  dark ? "text-white/62" : "text-[var(--muted)]",
+                )}
+              >
+                {statusLabel}
+              </p>
+              <p className="text-sm font-semibold">
+                {currentUser ? currentUser.fullName : "Peta publik dapat diakses semua orang"}
+              </p>
+            </div>
+            <span
+              className={cn(
+                "inline-flex min-w-20 items-center justify-center rounded-full px-3 py-1 text-xs font-bold",
+                currentUser?.role === "admin"
+                  ? "bg-[rgb(245_197_24_/_18%)] text-[#806300]"
+                  : currentUser
+                    ? "bg-[rgb(0_107_98_/_10%)] text-[var(--teal)]"
+                    : dark
+                      ? "bg-white/10 text-white"
+                      : "bg-[var(--surface-strong)] text-[var(--muted)]",
+              )}
+            >
+              {roleLabel}
+            </span>
+          </div>
+          {!currentUser && (
+            <ButtonLink href="/register" variant="secondary" className="hidden sm:inline-flex">
+              Daftar
+            </ButtonLink>
+          )}
+          {currentUser && <LogoutButton className="hidden sm:flex" />}
+          <ButtonLink href={primaryAction.href} className="hidden sm:inline-flex">
+            {primaryAction.label}
           </ButtonLink>
           <button className="inline-flex size-10 items-center justify-center rounded-md border border-current/15 md:hidden">
             <Menu className="size-5" />

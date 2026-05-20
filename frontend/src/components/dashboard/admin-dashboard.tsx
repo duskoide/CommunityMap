@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   Timer,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { PublicMap } from "@/components/map/public-map";
 import { MetricCard } from "@/components/dashboard/metric-card";
@@ -18,16 +18,25 @@ import { CategoryIcon } from "@/components/ui/category-icon";
 import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { adminStats, getCategory, statusLabels } from "@/data/mock-data";
+import { getCategory, statusLabels } from "@/data/report-metadata";
+import { verifyReport } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
-import type { Report, ReportStatus } from "@/types/community-map";
+import type { AppUser, Report, ReportStatus } from "@/types/community-map";
 
 const statuses: ReportStatus[] = ["new", "verified", "in_progress", "resolved"];
 
-export function AdminDashboard({ initialReports }: { initialReports: Report[] }) {
+export function AdminDashboard({
+  initialReports,
+  currentUser,
+}: {
+  initialReports: Report[];
+  currentUser: AppUser;
+}) {
   const [reports, setReports] = useState(initialReports);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<ReportStatus | "all">("all");
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const filteredReports = useMemo(
     () =>
@@ -42,18 +51,50 @@ export function AdminDashboard({ initialReports }: { initialReports: Report[] })
     [query, reports, status],
   );
 
+  const stats = useMemo(() => {
+    const totalReports = reports.length;
+    const newReports = reports.filter((report) => report.status === "new").length;
+    const verifiedReports = reports.filter(
+      (report) => report.status === "verified",
+    ).length;
+    const inProgressReports = reports.filter(
+      (report) => report.status === "in_progress",
+    ).length;
+    const resolvedReports = reports.filter(
+      (report) => report.status === "resolved",
+    ).length;
+    const upvotes = reports.reduce((sum, report) => sum + report.upvoteCount, 0);
+
+    return {
+      totalReports,
+      newReports,
+      verifiedReports,
+      inProgressReports,
+      resolvedReports,
+      upvotes,
+    };
+  }, [reports]);
+
   function quickVerify(id: string) {
-    setReports((current) =>
-      current.map((report) =>
-        report.id === id
-          ? { ...report, status: "verified", isVerified: true }
-          : report,
-      ),
-    );
+    setFeedback(null);
+    startTransition(async () => {
+      try {
+        const updated = await verifyReport(id);
+        setReports((current) =>
+          current.map((report) => (report.id === id ? updated : report)),
+        );
+      } catch (error) {
+        setFeedback(
+          error instanceof Error
+            ? error.message
+            : "Gagal memverifikasi laporan.",
+        );
+      }
+    });
   }
 
   return (
-    <AdminShell>
+    <AdminShell currentUser={currentUser}>
       <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
         <header className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-start">
           <div>
@@ -70,11 +111,11 @@ export function AdminDashboard({ initialReports }: { initialReports: Report[] })
         </header>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <MetricCard label="Total Laporan" value={adminStats.totalReports} helper="7 hari terakhir" icon={FileCheck2} />
-          <MetricCard label="Baru" value={adminStats.newReports} helper="Menunggu verifikasi" icon={Timer} tone="danger" />
-          <MetricCard label="Diverifikasi" value={adminStats.verifiedReports} helper="Siap ditindaklanjuti" icon={ShieldCheck} tone="blue" />
-          <MetricCard label="Sedang Diperbaiki" value={adminStats.inProgressReports} helper="Proses lapangan" icon={Timer} tone="amber" />
-          <MetricCard label="Selesai" value={adminStats.resolvedReports} helper="Ditutup petugas" icon={ShieldCheck} tone="green" />
+          <MetricCard label="Total Laporan" value={stats.totalReports} helper="Data aktif saat ini" icon={FileCheck2} />
+          <MetricCard label="Baru" value={stats.newReports} helper="Menunggu verifikasi" icon={Timer} tone="danger" />
+          <MetricCard label="Diverifikasi" value={stats.verifiedReports} helper="Siap ditindaklanjuti" icon={ShieldCheck} tone="blue" />
+          <MetricCard label="Sedang Diperbaiki" value={stats.inProgressReports} helper="Proses lapangan" icon={Timer} tone="amber" />
+          <MetricCard label="Selesai" value={stats.resolvedReports} helper={`Total upvote ${stats.upvotes}`} icon={ShieldCheck} tone="green" />
         </div>
 
         <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_340px]">
@@ -107,6 +148,12 @@ export function AdminDashboard({ initialReports }: { initialReports: Report[] })
                 </select>
               </div>
             </div>
+
+            {feedback && (
+              <div className="mt-4 rounded-lg border border-[rgb(239_59_45_/_24%)] bg-[rgb(239_59_45_/_8%)] px-4 py-3 text-sm text-[var(--danger)]">
+                {feedback}
+              </div>
+            )}
 
             <div className="mt-4 overflow-x-auto">
               <table className="w-full min-w-[760px] border-separate border-spacing-y-2 text-left text-sm">
@@ -156,8 +203,9 @@ export function AdminDashboard({ initialReports }: { initialReports: Report[] })
                             variant="secondary"
                             className="min-h-8 px-3 py-1 text-xs"
                             onClick={() => quickVerify(report.id)}
+                            disabled={isPending}
                           >
-                            Tinjau
+                            {isPending ? "Menyimpan..." : "Tinjau"}
                           </Button>
                           <Link
                             href={`/admin/reports/${report.id}`}
@@ -177,7 +225,7 @@ export function AdminDashboard({ initialReports }: { initialReports: Report[] })
           <aside className="flex flex-col gap-4">
             <Card className="overflow-hidden p-4">
               <h2 className="mb-3 text-lg font-bold">Peta Pratinjau</h2>
-              <PublicMap compact />
+              <PublicMap compact initialReports={reports} />
             </Card>
             <Card className="p-5">
               <h2 className="text-lg font-bold">Distribusi Kategori</h2>

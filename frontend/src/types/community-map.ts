@@ -1,5 +1,12 @@
 export type UserRole = "citizen" | "admin";
 
+export type AppUser = {
+  id: string;
+  fullName: string;
+  email: string;
+  role: UserRole;
+};
+
 export type ReportCategorySlug =
   | "pothole"
   | "streetlight"
@@ -57,6 +64,7 @@ export type Report = {
   updatedAt: string;
   images: ReportImage[];
   statusLogs: StatusLog[];
+  hasUpvoted?: boolean;
 };
 
 export type AdminStats = {

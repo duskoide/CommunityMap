@@ -1,0 +1,34 @@
+
+> dev
+> npm run dev:clean && concurrently -k -n backend,frontend -c blue,green "npm run dev --prefix backend" "npm run dev --prefix frontend -- --port 3000"
+
+
+> dev:clean
+> node scripts/clean-dev-ports.cjs
+
+Freed dev ports 3000, 3001, and 4000.
+[frontend] 
+[frontend] > communitymap-frontend@0.1.0 dev
+[frontend] > next dev --port 3000
+[frontend] 
+[backend] 
+[backend] > communitymap-backend@0.1.0 dev
+[backend] > node --watch src/index.js
+[backend] 
+[backend] PostgreSQL tidak tersedia, backend memakai in-memory database untuk mode dev.
+[backend] CommunityMap backend listening on http://localhost:4000
+[frontend]    ▲ Next.js 15.5.18
+[frontend]    - Local:        http://localhost:3000
+[frontend]    - Network:      http://172.27.48.1:3000
+[frontend] 
+[frontend]  ✓ Starting...
+[frontend]  ✓ Ready in 1827ms
+[frontend]  ○ Compiling /report ...
+[frontend]  ✓ Compiled /report in 956ms (687 modules)
+[frontend]  GET /report 200 in 1310ms
+[frontend]  ✓ Compiled /admin in 243ms (832 modules)
+[frontend]  GET /admin 200 in 459ms
+[frontend]  ✓ Compiled /history in 161ms (872 modules)
+[frontend]  GET /history 200 in 368ms
+[frontend] npm run dev --prefix frontend -- --port 3000 exited with code 1
+--> Sending SIGTERM to other processes..

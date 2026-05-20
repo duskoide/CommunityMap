@@ -1,0 +1,23 @@
+
+> dev
+> node scripts/dev.cjs
+
+[backend] 
+[backend] > communitymap-backend@0.1.0 dev
+[backend] > node --watch src/index.js
+[backend] 
+[frontend] 
+[frontend] > communitymap-frontend@0.1.0 dev
+[frontend] > next dev --port 3000
+[frontend] 
+[backend] PostgreSQL tidak tersedia, backend memakai in-memory database untuk mode dev.
+[backend] CommunityMap backend listening on http://localhost:4000
+[frontend]    ▲ Next.js 15.5.18
+[frontend]    - Local:        http://localhost:3000
+[frontend]    - Network:      http://172.27.48.1:3000
+[frontend] 
+[frontend]  ✓ Starting...
+[frontend]  ✓ Ready in 1908ms
+[frontend]  ○ Compiling / ...
+[frontend]  ✓ Compiled / in 3.6s (806 modules)
+[frontend]  GET / 200 in 4351ms

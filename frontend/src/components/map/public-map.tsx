@@ -2,12 +2,13 @@
 
 import Image from "next/image";
 import { Filter, Search, ThumbsUp } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { CategoryIcon } from "@/components/ui/category-icon";
 import { Map, MapControls, MapMarker, MapRoute } from "@/components/ui/map";
 import { MiniBadge, StatusBadge } from "@/components/ui/badge";
-import { categories, getReportsByFilters, statusLabels } from "@/data/mock-data";
+import { categories, statusLabels } from "@/data/report-metadata";
+import { removeUpvote, upvoteReport } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import type {
   Report,
@@ -18,18 +19,76 @@ import { MapMarkerPin } from "./map-marker-pin";
 
 const statuses: ReportStatus[] = ["new", "verified", "in_progress", "resolved"];
 
-export function PublicMap({ compact = false }: { compact?: boolean }) {
+export function PublicMap({
+  compact = false,
+  initialReports,
+}: {
+  compact?: boolean;
+  initialReports: Report[];
+}) {
+  const [reports, setReports] = useState(initialReports);
   const [categoryFilters, setCategoryFilters] = useState<ReportCategorySlug[]>([]);
   const [statusFilters, setStatusFilters] = useState<ReportStatus[]>([]);
-  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-  const [upvoted, setUpvoted] = useState<Record<string, boolean>>({});
-
-  const filteredReports = useMemo(
-    () => getReportsByFilters(categoryFilters, statusFilters),
-    [categoryFilters, statusFilters],
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(
+    initialReports[0]?.id || null,
   );
+  const [search, setSearch] = useState("");
+  const [districtFilter, setDistrictFilter] = useState("all");
+  const [dateRange, setDateRange] = useState("all");
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
 
-  const visibleSelected = selectedReport ?? filteredReports[0];
+  useEffect(() => {
+    setReports(initialReports);
+  }, [initialReports]);
+
+  const filteredReports = useMemo(() => {
+    return reports.filter((report) => {
+      const matchesCategory =
+        categoryFilters.length === 0 || categoryFilters.includes(report.categorySlug);
+      const matchesStatus =
+        statusFilters.length === 0 || statusFilters.includes(report.status);
+      const matchesDistrict =
+        districtFilter === "all" || report.district === districtFilter;
+      const matchesSearch =
+        search.trim().length === 0 ||
+        report.title.toLowerCase().includes(search.toLowerCase()) ||
+        report.address.toLowerCase().includes(search.toLowerCase()) ||
+        report.id.toLowerCase().includes(search.toLowerCase());
+
+      let matchesDateRange = true;
+      if (dateRange === "7d") {
+        matchesDateRange =
+          Date.now() - new Date(report.createdAt).getTime() <= 7 * 24 * 60 * 60 * 1000;
+      } else if (dateRange === "30d") {
+        matchesDateRange =
+          Date.now() - new Date(report.createdAt).getTime() <= 30 * 24 * 60 * 60 * 1000;
+      }
+
+      return (
+        matchesCategory &&
+        matchesStatus &&
+        matchesDistrict &&
+        matchesSearch &&
+        matchesDateRange
+      );
+    });
+  }, [categoryFilters, dateRange, districtFilter, reports, search, statusFilters]);
+
+  useEffect(() => {
+    if (!filteredReports.some((report) => report.id === selectedReportId)) {
+      setSelectedReportId(filteredReports[0]?.id || null);
+    }
+  }, [filteredReports, selectedReportId]);
+
+  const visibleSelected =
+    filteredReports.find((report) => report.id === selectedReportId) ||
+    filteredReports[0] ||
+    null;
+  const districts = useMemo(
+    () => Array.from(new Set(reports.map((report) => report.district))).sort(),
+    [reports],
+  );
 
   function toggleCategory(slug: ReportCategorySlug) {
     setCategoryFilters((current) =>
@@ -45,6 +104,27 @@ export function PublicMap({ compact = false }: { compact?: boolean }) {
         ? current.filter((item) => item !== status)
         : [...current, status],
     );
+  }
+
+  function handleUpvote(report: Report) {
+    setFeedback(null);
+    startTransition(async () => {
+      try {
+        const updated = report.hasUpvoted
+          ? await removeUpvote(report.id)
+          : await upvoteReport(report.id);
+
+        setReports((current) =>
+          current.map((item) => (item.id === updated.id ? updated : item)),
+        );
+      } catch (error) {
+        setFeedback(
+          error instanceof Error
+            ? error.message
+            : "Gagal memperbarui upvote.",
+        );
+      }
+    });
   }
 
   return (
@@ -66,6 +146,9 @@ export function PublicMap({ compact = false }: { compact?: boolean }) {
               onClick={() => {
                 setCategoryFilters([]);
                 setStatusFilters([]);
+                setSearch("");
+                setDistrictFilter("all");
+                setDateRange("all");
               }}
             >
               Reset
@@ -109,19 +192,31 @@ export function PublicMap({ compact = false }: { compact?: boolean }) {
             <label className="text-xs font-bold text-[var(--muted)]">
               Rentang Waktu
             </label>
-            <select className="h-10 rounded-md border border-[var(--border)] bg-white px-3 text-sm">
-              <option>7 Hari Terakhir</option>
-              <option>30 Hari Terakhir</option>
-              <option>Semua Data</option>
+            <select
+              value={dateRange}
+              onChange={(event) => setDateRange(event.target.value)}
+              className="h-10 rounded-md border border-[var(--border)] bg-white px-3 text-sm"
+            >
+              <option value="7d">7 Hari Terakhir</option>
+              <option value="30d">30 Hari Terakhir</option>
+              <option value="all">Semua Data</option>
             </select>
             <label className="text-xs font-bold text-[var(--muted)]">Area</label>
-            <select className="h-10 rounded-md border border-[var(--border)] bg-white px-3 text-sm">
-              <option>Semua Wilayah</option>
-              <option>Jakarta Pusat</option>
-              <option>Jakarta Selatan</option>
-              <option>Bekasi</option>
+            <select
+              value={districtFilter}
+              onChange={(event) => setDistrictFilter(event.target.value)}
+              className="h-10 rounded-md border border-[var(--border)] bg-white px-3 text-sm"
+            >
+              <option value="all">Semua Wilayah</option>
+              {districts.map((district) => (
+                <option key={district} value={district}>
+                  {district}
+                </option>
+              ))}
             </select>
-            <Button className="mt-2">Terapkan Filter</Button>
+            <Button className="mt-2" variant="secondary">
+              {filteredReports.length} laporan ditemukan
+            </Button>
           </div>
         </aside>
       )}
@@ -130,6 +225,8 @@ export function PublicMap({ compact = false }: { compact?: boolean }) {
         <div className="absolute left-4 right-4 top-4 z-10 flex items-center gap-2 rounded-lg border border-[var(--border)] bg-white px-3 py-2 shadow-[var(--shadow)] lg:left-8 lg:right-auto lg:w-[420px]">
           <Search className="size-4 text-[var(--muted)]" />
           <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
             className="w-full bg-transparent text-sm outline-none"
             placeholder="Cari lokasi atau alamat..."
           />
@@ -139,18 +236,20 @@ export function PublicMap({ compact = false }: { compact?: boolean }) {
           className="h-full min-h-[460px] w-full"
         >
           <MapControls position="top-right" />
-          <MapRoute
-            coordinates={filteredReports.map((report) => [
-              report.coordinates.longitude,
-              report.coordinates.latitude,
-            ])}
-          />
+          {filteredReports.length > 1 && (
+            <MapRoute
+              coordinates={filteredReports.map((report) => [
+                report.coordinates.longitude,
+                report.coordinates.latitude,
+              ])}
+            />
+          )}
           {filteredReports.map((report) => (
             <MapMarker
               key={report.id}
               longitude={report.coordinates.longitude}
               latitude={report.coordinates.latitude}
-              onClick={() => setSelectedReport(report)}
+              onClick={() => setSelectedReportId(report.id)}
             >
               <MapMarkerPin
                 report={report}
@@ -159,6 +258,11 @@ export function PublicMap({ compact = false }: { compact?: boolean }) {
             </MapMarker>
           ))}
         </Map>
+        {feedback && (
+          <div className="absolute bottom-4 right-4 z-10 max-w-xs rounded-lg border border-[rgb(239_59_45_/_24%)] bg-white px-4 py-3 text-sm shadow-[var(--shadow)]">
+            {feedback}
+          </div>
+        )}
         <div className="absolute bottom-4 left-4 z-10 hidden rounded-lg border border-[var(--border)] bg-white p-3 shadow-[var(--shadow)] md:block">
           <p className="mb-2 text-xs font-bold">Legenda</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
@@ -176,13 +280,8 @@ export function PublicMap({ compact = false }: { compact?: boolean }) {
         <aside className="z-10 border-t border-[var(--border)] bg-white p-4 lg:border-l lg:border-t-0">
           <ReportMapPanel
             report={visibleSelected}
-            upvoted={Boolean(upvoted[visibleSelected.id])}
-            onUpvote={() =>
-              setUpvoted((current) => ({
-                ...current,
-                [visibleSelected.id]: !current[visibleSelected.id],
-              }))
-            }
+            pending={pending}
+            onUpvote={() => handleUpvote(visibleSelected)}
           />
         </aside>
       )}
@@ -207,12 +306,12 @@ function FilterGroup({
 
 function ReportMapPanel({
   report,
-  upvoted,
   onUpvote,
+  pending,
 }: {
   report: Report;
-  upvoted: boolean;
   onUpvote: () => void;
+  pending: boolean;
 }) {
   return (
     <div className="flex h-full flex-col gap-4">
@@ -237,31 +336,42 @@ function ReportMapPanel({
       </div>
       <div className="flex flex-col gap-2 text-sm text-[var(--muted)]">
         <p>{report.address}</p>
-        <p>Dilaporkan hari ini, 09:24</p>
+        <p>
+          Dilaporkan{" "}
+          {new Date(report.createdAt).toLocaleString("id-ID", {
+            dateStyle: "medium",
+            timeStyle: "short",
+          })}
+        </p>
       </div>
       <p className="text-sm leading-6 text-[var(--asphalt)]">
         {report.description}
       </p>
       <button
+        disabled={pending}
         onClick={onUpvote}
         className={cn(
           "flex items-center justify-between rounded-lg border p-4 text-left transition",
-          upvoted
+          report.hasUpvoted
             ? "border-[var(--danger)] bg-[rgb(239_59_45_/_8%)]"
             : "border-[var(--border)] bg-white hover:border-[var(--danger)]",
         )}
       >
         <span>
           <span className="block text-sm font-bold">
-            {report.upvoteCount + (upvoted ? 1 : 0)} Upvote
+            {report.upvoteCount} Upvote
           </span>
           <span className="text-xs text-[var(--muted)]">
             +12 warga merasakan hal serupa
           </span>
         </span>
-        <ThumbsUp className={upvoted ? "size-5 text-[var(--danger)]" : "size-5"} />
+        <ThumbsUp className={report.hasUpvoted ? "size-5 text-[var(--danger)]" : "size-5"} />
       </button>
-      <Button variant="secondary" className="mt-auto w-full">
+      <Button
+        variant="secondary"
+        className="mt-auto w-full"
+        onClick={() => window.location.assign(`/reports/${report.id}`)}
+      >
         Lihat Detail
       </Button>
     </div>

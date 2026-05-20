@@ -8,8 +8,9 @@ import {
 import { PublicMap } from "@/components/map/public-map";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { SiteHeader } from "@/components/layout/site-header";
+import { AppHeader } from "@/components/layout/app-header";
 import { HeroScene } from "@/components/landing/hero-scene";
+import { getReports } from "@/lib/api";
 
 const steps = [
   {
@@ -35,10 +36,12 @@ const adminHighlights = [
   { value: "282", label: "Selesai", icon: CheckCircle2 },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const reports = await getReports();
+
   return (
     <>
-      <SiteHeader dark />
+      <AppHeader dark />
       <main>
         <HeroScene />
 
@@ -88,7 +91,7 @@ export default function HomePage() {
                 Buka Peta Lengkap
               </ButtonLink>
             </div>
-            <PublicMap compact />
+            <PublicMap compact initialReports={reports} />
           </div>
         </section>
 

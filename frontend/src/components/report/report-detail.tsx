@@ -5,7 +5,7 @@ import { CategoryIcon } from "@/components/ui/category-icon";
 import { MiniBadge, StatusBadge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ButtonLink } from "@/components/ui/button";
-import { getCategory, getStatusLabel } from "@/data/mock-data";
+import { getCategory, getStatusLabel } from "@/data/report-metadata";
 import type { Report } from "@/types/community-map";
 
 export function ReportDetail({ report, admin = false }: { report: Report; admin?: boolean }) {
