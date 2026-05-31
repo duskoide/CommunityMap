@@ -16,6 +16,7 @@ async function createPool() {
     databaseMode = "postgres";
     return postgresPool;
   } catch (error) {
+    console.error("PostgreSQL connection failed:", error.message);
     await postgresPool.end().catch(() => undefined);
 
     const memoryDb = newDb();
