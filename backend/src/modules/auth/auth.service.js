@@ -29,6 +29,9 @@ async function findUserById(id) {
 }
 
 async function authenticateUser(email, password) {
+  email = String(email || "").trim().toLowerCase();
+  password = String(password || "").trim();
+
   assert(email, 400, "Email wajib diisi.");
   assert(password, 400, "Password wajib diisi.");
 
