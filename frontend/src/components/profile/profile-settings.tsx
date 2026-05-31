@@ -30,9 +30,7 @@ export function ProfileSettings({ currentUser }: { currentUser: AppUser }) {
           currentPassword: currentPassword || undefined,
           newPassword: newPassword || undefined,
         });
-        setCurrentPassword("");
-        setNewPassword("");
-        setFeedback("Profil berhasil diperbarui.");
+        window.location.assign("/feeds");
       } catch (error) {
         setFeedback(
           error instanceof Error ? error.message : "Gagal memperbarui profil.",

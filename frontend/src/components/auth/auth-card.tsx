@@ -32,7 +32,7 @@ export function AuthCard({ mode }: { mode: "login" | "register" }) {
       <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
         {isRegister
           ? "Pendaftaran publik dibuka untuk akun warga. Akun petugas masuk lewat halaman login yang sudah disiapkan."
-          : "Autentikasi sekarang sudah aktif. Untuk demo lokal, akun bawaan yang siap dipakai adalah `warga@email.com` dan `admin@dpu.go.id` dengan password `password`."}
+          : "Masukkan email dan password akun kamu untuk masuk ke CommunityMap."}
       </p>
       {!isRegister ? (
         <div className="mt-5 grid grid-cols-2 gap-2 rounded-lg bg-[var(--surface-strong)] p-1">

@@ -103,6 +103,7 @@ export function ReportForm() {
 
   function handleFileChange(file: File | null) {
     setSelectedFile(file);
+    if (file) setFeedback(null);
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
     }

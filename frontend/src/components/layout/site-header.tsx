@@ -72,7 +72,7 @@ export function SiteHeader({
           : "border-[var(--border)] bg-white/90 text-[var(--asphalt)]",
       )}
     >
-      <div className="grid h-16 grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 sm:px-5 lg:px-6">
+      <div className="flex h-16 items-center gap-3 px-4 sm:px-5 lg:px-6">
         <Link href="/" className="flex min-w-0 items-center gap-2 font-bold">
           <Image
             src="/main-logo.png"
@@ -84,7 +84,7 @@ export function SiteHeader({
           <span className="hidden sm:inline">CommunityMap</span>
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden flex-1 items-center gap-1 md:flex">
           {navItems.map((item) => (
             <Link
               key={item.href}
@@ -105,7 +105,7 @@ export function SiteHeader({
           ))}
         </nav>
 
-        <div className="flex items-center justify-end gap-2">
+        <div className="ml-auto flex items-center gap-2">
           {currentUser ? (
             <>
               <Link
@@ -141,7 +141,8 @@ export function SiteHeader({
       </div>
 
       {open && (
-        <div className={cn("border-t px-4 py-3 md:hidden", dark ? "border-white/10" : "border-[var(--border)]")}>
+        <div className={cn("border-t px-4 py-3 md:hidden", dark ? "border-white/10" : "border-[var(--border)]")}
+        >
           <nav className="flex flex-col gap-1">
             {navItems.map((item) => (
               <Link
@@ -170,6 +171,11 @@ export function SiteHeader({
               >
                 Daftar
               </Link>
+            )}
+            {currentUser && (
+              <div className="mt-1 border-t border-current/10 pt-2">
+                <LogoutButton className="w-full justify-start px-3" />
+              </div>
             )}
           </nav>
         </div>

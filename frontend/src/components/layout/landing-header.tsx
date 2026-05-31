@@ -11,7 +11,6 @@ const landingNav = [
   { href: "#tentang", label: "Tentang" },
   { href: "#alur", label: "Alur" },
   { href: "#peta-preview", label: "Peta Publik" },
-  { href: "#admin-preview", label: "Admin" },
 ];
 
 export function LandingHeader({ currentUser }: { currentUser: AppUser | null }) {

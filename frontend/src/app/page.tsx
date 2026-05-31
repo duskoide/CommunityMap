@@ -123,7 +123,7 @@ export default async function HomePage() {
 
         <section id="admin-preview" className="bg-white py-16">
           <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:px-8">
-            <div className="sticky top-24 h-fit">
+            <div className="h-fit lg:sticky lg:top-24">
               <h2 className="text-3xl font-black text-[var(--asphalt)]">
                 Dashboard petugas yang fokus pada prioritas
               </h2>
@@ -131,7 +131,7 @@ export default async function HomePage() {
                 Laporan warga dipusatkan menjadi daftar operasional: verifikasi,
                 update status, dan pantau distribusi kategori.
               </p>
-              <div className="mt-6 flex gap-3">
+              <div className="mt-6 flex flex-wrap gap-3">
                 <ButtonLink href="/admin">Lihat Dashboard</ButtonLink>
                 <ButtonLink href="/history" variant="secondary">
                   Riwayat Warga

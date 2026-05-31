@@ -1,7 +1,8 @@
+import { safeGetCurrentUser } from "@/lib/api/server";
 import Image from "next/image";
 import Link from "next/link";
 
-const footerLinks = [
+const baseFooterLinks = [
   {
     title: "Navigasi",
     links: [
@@ -11,24 +12,31 @@ const footerLinks = [
     ],
   },
   {
-    title: "Admin",
-    links: [
-      { href: "/admin", label: "Dashboard" },
-      { href: "/login", label: "Masuk" },
-      { href: "/register", label: "Daftar" },
-    ],
-  },
-  {
     title: "Informasi",
     links: [
-      { href: "#", label: "Tentang Kami" },
-      { href: "#", label: "Kontak" },
-      { href: "#", label: "Kebijakan Privasi" },
+      { href: "/about", label: "Tentang Kami" },
+      { href: "/contact", label: "Kontak" },
+      { href: "/privacy", label: "Kebijakan Privasi" },
     ],
   },
 ];
 
-export function SiteFooter() {
+const adminFooterLinks = {
+  title: "Admin",
+  links: [
+    { href: "/admin", label: "Dashboard" },
+    { href: "/login", label: "Masuk" },
+    { href: "/register", label: "Daftar" },
+  ],
+};
+
+export async function SiteFooter() {
+  const currentUser = await safeGetCurrentUser();
+  const footerLinks = [...baseFooterLinks];
+  if (currentUser?.role === "admin") {
+    footerLinks.splice(1, 0, adminFooterLinks); // Insert admin before "Informasi"
+  }
+
   return (
     <footer className="site-footer">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -83,14 +91,14 @@ export function SiteFooter() {
           </p>
           <div className="flex items-center gap-4 text-xs text-white/42">
             <Link
-              href="#"
+              href="/about"
               className="transition hover:text-[var(--amber)]"
             >
-              Syarat & Ketentuan
+              Tentang Kami
             </Link>
             <span className="text-white/20">|</span>
             <Link
-              href="#"
+              href="/privacy"
               className="transition hover:text-[var(--amber)]"
             >
               Kebijakan Privasi
