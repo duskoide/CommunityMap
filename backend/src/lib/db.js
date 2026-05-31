@@ -7,11 +7,15 @@ let poolPromise = null;
 let databaseMode = "postgres";
 
 async function createPool() {
+  const useSsl = env.databaseUrl.includes("ssl=true") || env.databaseUrl.includes("sslmode=");
+  const cleanUrl = env.databaseUrl
+    .replace(/[?&]ssl=true/, "")
+    .replace(/[?&]sslmode=\w+/, "")
+    .replace(/\?$/, "");
+
   const postgresPool = new Pool({
-    connectionString: env.databaseUrl,
-    ssl: env.databaseUrl.includes("ssl=true") || env.databaseUrl.includes("sslmode=")
-      ? { rejectUnauthorized: false }
-      : undefined,
+    connectionString: cleanUrl,
+    ssl: useSsl ? { rejectUnauthorized: false } : undefined,
   });
 
   try {
