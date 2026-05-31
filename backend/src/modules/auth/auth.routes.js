@@ -1,4 +1,5 @@
 const express = require("express");
+const rateLimit = require("express-rate-limit");
 const { query } = require("../../lib/db");
 const { hashPassword, serializeUser, signToken } = require("../../lib/auth");
 const { assert } = require("../../lib/http");
@@ -7,6 +8,19 @@ const { authenticateUser, updateUserProfile } = require("./auth.service");
 const { requireAuth } = require("../../middlewares/auth");
 
 const router = express.Router();
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  message: {
+    error: {
+      message: "Terlalu banyak percobaan login. Coba lagi dalam 15 menit.",
+      code: "RATE_LIMIT_EXCEEDED",
+    },
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 function setAuthCookie(res, token) {
   res.cookie(env.authCookieName, token, {
@@ -27,6 +41,7 @@ router.post("/register", async (req, res, next) => {
     assert(fullName?.trim(), 400, "Nama lengkap wajib diisi.");
     assert(email?.trim(), 400, "Email wajib diisi.");
     assert(password?.trim(), 400, "Password wajib diisi.");
+    assert(password.trim().length >= 6, 400, "Password minimal 6 karakter.");
     assert(
       ["citizen", "admin"].includes(role),
       400,
@@ -69,7 +84,7 @@ router.post("/register", async (req, res, next) => {
   }
 });
 
-router.post("/login", async (req, res, next) => {
+router.post("/login", loginLimiter, async (req, res, next) => {
   try {
     const { email, password } = req.body || {};
     const user = await authenticateUser(email, password);
