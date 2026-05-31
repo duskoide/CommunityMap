@@ -30,7 +30,7 @@ const env = {
     : defaultOrigins,
   databaseUrl:
     process.env.DATABASE_URL ||
-    "postgres://communitymap:communitymap@localhost:5432/communitymap",
+    "postgres://communitymap:communitymap@localhost:5433/communitymap",
   jwtSecret: process.env.JWT_SECRET || "change-me",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
   authCookieName: process.env.AUTH_COOKIE_NAME || "communitymap_token",

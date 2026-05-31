@@ -2,6 +2,30 @@ const { hashPassword } = require("./auth");
 const { getDatabaseMode, getPool, query, withTransaction } = require("./db");
 const { demoReports, demoUsers } = require("./demo-data");
 
+function buildUsername(fullName, id) {
+  const base = (fullName || "user").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+  return `${base || "user"}_${String(id).slice(0, 4)}`;
+}
+
+async function fillMissingUsernames() {
+  const { rows } = await query(`
+    SELECT id, full_name
+    FROM users
+    WHERE username IS NULL
+  `);
+
+  for (const row of rows) {
+    await query(
+      `
+        UPDATE users
+        SET username = $1
+        WHERE id = $2
+      `,
+      [buildUsername(row.full_name, row.id), row.id],
+    );
+  }
+}
+
 async function runMigrations() {
   await getPool();
 
@@ -119,12 +143,8 @@ async function runMigrations() {
     ADD COLUMN IF NOT EXISTS username VARCHAR(50)
   `);
 
-  // Fill existing users without username
-  await query(`
-    UPDATE users
-    SET username = LOWER(REGEXP_REPLACE(full_name, '[^a-zA-Z0-9]', '', 'g')) || '_' || substr(id::text, 1, 4)
-    WHERE username IS NULL
-  `);
+  // Backfill legacy rows without relying on database-specific regex helpers.
+  await fillMissingUsernames();
 
   if (getDatabaseMode() !== "memory") {
     await query(`
