@@ -173,7 +173,10 @@ export async function safeGetCurrentUser(): Promise<AppUser | null> {
       return null;
     }
 
-    if (shouldUseDevFallback(error)) {
+    // Di development, kembalikan null saat backend belum jalan (network error).
+    // Di production, lempar error agar muncul di log — jangan diam-diam return null,
+    // karena itu menyebabkan semua user tampak "belum login" padahal backend tidak terjangkau.
+    if (shouldUseDevFallback(error) && process.env.NODE_ENV !== "production") {
       logDevFallback("/auth/me", error);
       return null;
     }
