@@ -1,19 +1,11 @@
-/**
- * Debug endpoint — HAPUS setelah masalah auth selesai diinvestigasi.
- * Akses: GET https://communitymap.site/debug-auth
- * Menampilkan: cookies yang diterima Lambda, dan hasil panggilan ke backend /auth/me.
- */
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { getServerApiBaseUrl } from "@/lib/api/base";
 
 export const dynamic = "force-dynamic";
 
-const BACKEND_URL =
-  process.env.INTERNAL_API_URL
-    ? `${process.env.INTERNAL_API_URL}/api`
-    : "http://127.0.0.1:4000/api";
-
 export async function GET() {
+  const BACKEND_URL = getServerApiBaseUrl();
   const cookieStore = await cookies();
   const allCookies = cookieStore.getAll();
   const cookieHeader = allCookies

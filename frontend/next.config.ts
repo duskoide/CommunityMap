@@ -1,10 +1,16 @@
 import path from "path";
 import type { NextConfig } from "next";
 
-const BACKEND_URL =
-  process.env.INTERNAL_API_URL || "http://127.0.0.1:4000";
+const INTERNAL_API_URL = process.env.INTERNAL_API_URL || "";
+const BACKEND_URL = INTERNAL_API_URL || "http://127.0.0.1:4000";
 
 const nextConfig: NextConfig = {
+  // Ekspos INTERNAL_API_URL ke server bundle secara eksplisit.
+  // Tanpa ini, Next.js/webpack meng-inline nilainya saat build time sebagai undefined
+  // jika var tidak tersedia selama proses build di Amplify.
+  env: {
+    INTERNAL_API_URL: INTERNAL_API_URL,
+  },
   images: {
     remotePatterns: [
       {

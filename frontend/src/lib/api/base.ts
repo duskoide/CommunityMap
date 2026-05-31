@@ -2,11 +2,18 @@
 export const CLIENT_API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
-/** Server-side (RSC / Route Handler): talk to the backend directly. */
-export const SERVER_API_BASE_URL =
-  process.env.INTERNAL_API_URL
-    ? `${process.env.INTERNAL_API_URL}/api`
-    : "http://127.0.0.1:4000/api";
+/**
+ * Server-side (RSC / Route Handler): talk to the backend directly.
+ * Gunakan fungsi (bukan konstanta) agar process.env dibaca saat runtime,
+ * bukan di-inline oleh webpack saat build time.
+ */
+export function getServerApiBaseUrl(): string {
+  // Bracket notation mencegah webpack DefinePlugin meng-inline nilai ini
+  // saat build time — nilai dibaca dari environment Lambda saat request.
+  // eslint-disable-next-line @typescript-eslint/dot-notation
+  const url = process.env["INTERNAL_API_URL"] || process.env.INTERNAL_API_URL;
+  return url ? `${url}/api` : "http://127.0.0.1:4000/api";
+}
 
 type ErrorFactory<TError extends Error> = (
   status: number,

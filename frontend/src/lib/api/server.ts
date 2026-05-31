@@ -2,7 +2,7 @@ import "server-only";
 
 import { cookies } from "next/headers";
 import type { AdminStats, AppUser, Report } from "@/types/community-map";
-import { SERVER_API_BASE_URL, isNetworkError, readApiResponse } from "./base";
+import { getServerApiBaseUrl, isNetworkError, readApiResponse } from "./base";
 
 function shouldUseDevFallback(error: unknown) {
   return isNetworkError(error);
@@ -43,7 +43,7 @@ async function serverRequest<T>(path: string, init?: RequestInit): Promise<T> {
     headers.set("cookie", cookieHeader);
   }
 
-  const response = await fetch(`${SERVER_API_BASE_URL}${path}`, {
+  const response = await fetch(`${getServerApiBaseUrl()}${path}`, {
     ...init,
     cache: "no-store",
     headers,
