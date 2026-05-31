@@ -119,6 +119,8 @@ Gunakan akun berikut untuk mencoba fitur (jika mode *seeding* berjalan):
   - Email: `admin@dpu.go.id`
   - Password: `password`
 
-## 📄 Lisensi
+## Anggota Kelompok
 
-CommunityMap dikembangkan sebagai inisiatif publik. Bebas digunakan dan dimodifikasi untuk kebaikan bersama.
+1.   18224079 - Rafi Putra Nugraha
+2.   13524100 - Arghawisesa Dwinanda Arham
+3.   13524090 - Nashiruddin Akram
